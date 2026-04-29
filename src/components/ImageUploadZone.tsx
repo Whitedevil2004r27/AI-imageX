@@ -96,6 +96,53 @@ export default function ImageUploadZone({ onImageSelect }: UploadZoneProps) {
           </div>
         )}
       </div>
+
+      {/* Built-in Sample Images Gallery */}
+      {!preview && (
+        <div className="mt-6 p-4 rounded-xl border border-border bg-surface/30">
+          <p className="text-sm font-medium text-text-secondary mb-3 flex items-center gap-2">
+            <ImageIcon className="w-4 h-4" /> Or try a sample clinical image:
+          </p>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            {[
+              { url: "/samples/chest_xray.jpg", name: "Chest X-Ray" },
+              { url: "/samples/brain_mri.jpg", name: "Brain MRI" },
+              { url: "/samples/wrist_fracture.jpg", name: "Wrist Fracture" },
+              { url: "/samples/chest_ct.jpg", name: "Chest CT Scan" },
+            ].map((sample) => (
+              <button
+                key={sample.url}
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const res = await fetch(sample.url);
+                    const blob = await res.blob();
+                    const file = new File([blob], sample.name + ".jpg", { type: blob.type });
+                    onImageSelect(file);
+                    setPreview(sample.url);
+                  } catch (err) {
+                    console.error("Failed to load sample image", err);
+                  }
+                }}
+                className="flex-shrink-0 group relative rounded-lg overflow-hidden border border-border hover:border-accent hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all duration-300 w-28 h-28"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={sample.url} 
+                  alt={sample.name} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-2">
+                  <span className="text-xs font-semibold text-text-primary text-center px-1">
+                    {sample.name}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
