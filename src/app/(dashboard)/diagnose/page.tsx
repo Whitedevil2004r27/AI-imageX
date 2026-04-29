@@ -172,7 +172,7 @@ export default function DiagnosePage() {
         </div>
 
         {/* Right Column: Final Reports and Results */}
-        <div className="lg:col-span-1 overflow-y-auto h-[calc(100vh-200px)] space-y-6 pr-2">
+        <div className="lg:col-span-1 lg:overflow-y-auto lg:h-[calc(100vh-200px)] space-y-6 lg:pr-2">
           {diagnosisData ? (
             <>
               <FindingsPanel
