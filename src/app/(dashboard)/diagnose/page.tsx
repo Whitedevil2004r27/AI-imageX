@@ -57,41 +57,49 @@ export default function DiagnosePage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n\n");
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf("\n\n");
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          
-          const eventMatch = line.match(/^event: (.+)$/m);
-          const dataMatch = line.match(/^data: (.+)$/m);
+        while (boundary !== -1) {
+          const chunk = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+
+          const eventMatch = chunk.match(/^event: (.+)$/m);
+          const dataMatch = chunk.match(/^data: (.+)$/m);
 
           if (eventMatch && dataMatch) {
-            const eventName = eventMatch[1];
-            const eventData = JSON.parse(dataMatch[1]);
-            const timestamp = new Date().toLocaleTimeString();
+            try {
+              const eventName = eventMatch[1].trim();
+              const eventData = JSON.parse(dataMatch[1].trim());
+              const timestamp = new Date().toLocaleTimeString();
 
-            if (eventName === "agent_thinking") {
-              setLogs(prev => [...prev, { thought: eventData.thought, timestamp }]);
-            } else if (eventName === "tool_call") {
-              setLogs(prev => [...prev, { tool_name: eventData.tool_name, input: eventData.input, timestamp }]);
-            } else if (eventName === "tool_result") {
-              setLogs(prev => [...prev, { tool_name: eventData.tool_name, result: eventData.result, timestamp }]);
-            } else if (eventName === "diagnosis_complete") {
-              setDiagnosisData(eventData);
-              setIsComplete(true);
-              setIsAnalyzing(false);
-              addToast("Autonomous diagnosis complete. Findings ready for review.", "success");
-            } else if (eventName === "error") {
-              addToast(eventData.message, "error");
-              setIsAnalyzing(false);
+              if (eventName === "agent_thinking") {
+                setLogs(prev => [...prev, { thought: eventData.thought, timestamp }]);
+              } else if (eventName === "tool_call") {
+                setLogs(prev => [...prev, { tool_name: eventData.tool_name, input: eventData.input, timestamp }]);
+              } else if (eventName === "tool_result") {
+                setLogs(prev => [...prev, { tool_name: eventData.tool_name, result: eventData.result, timestamp }]);
+              } else if (eventName === "diagnosis_complete") {
+                setDiagnosisData(eventData);
+                setIsComplete(true);
+                setIsAnalyzing(false);
+                addToast("Autonomous diagnosis complete. Findings ready for review.", "success");
+              } else if (eventName === "error") {
+                addToast(eventData.message, "error");
+                setIsAnalyzing(false);
+              }
+            } catch (e) {
+              console.error("SSE parse failure:", e);
             }
           }
+          
+          boundary = buffer.indexOf("\n\n");
         }
       }
     } catch (err: any) {
