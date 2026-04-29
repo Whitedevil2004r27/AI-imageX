@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ShieldCheck, FileText, Printer, AlertTriangle, UserCog } from "lucide-react";
 
 interface ReportProps {
