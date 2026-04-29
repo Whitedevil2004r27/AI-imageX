@@ -28,53 +28,39 @@ export default function DiagnosisReport({
 }: ReportProps) {
   if (!report) return null;
 
+  const [showFHIR, setShowFHIR] = useState<boolean>(false);
+
   const handlePrint = () => {
     if (typeof window !== "undefined") {
       window.print();
     }
   };
 
-  const handleExportFHIR = () => {
-    const fhirPayload = {
-      resourceType: "DiagnosticReport",
-      id: `aix-${Math.random().toString(36).slice(2, 9)}`,
-      status: confidence >= 80 ? "final" : "partial",
-      category: [
-        {
-          coding: [
-            {
-              system: "http://terminology.hl7.org/CodeSystem/v2-0074",
-              code: "RAD",
-              display: "Radiology"
-            }
-          ]
-        }
-      ],
-      code: {
-        coding: [
-          {
-            system: "http://hl7.org/fhir/sid/icd-10",
-            code: report.icd_codes?.[0] || "Z00.0",
-            display: primaryDiagnosis
-          }
-        ],
-        text: primaryDiagnosis
-      },
-      conclusion: report.report_text,
-      conclusionCode: report.icd_codes?.map(code => ({
-        coding: [{ system: "http://hl7.org/fhir/sid/icd-10", code }]
-      }))
-    };
-
-    const blob = new Blob([JSON.stringify(fhirPayload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `FHIR-DiagnosticReport-${fhirPayload.id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const fhirPayload = {
+    resourceType: "DiagnosticReport",
+    id: `DR-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+    status: confidence >= 80 ? "final" : "preliminary",
+    category: [{
+      coding: [{
+        system: "http://terminology.hl7.org/CodeSystem/v2-0074",
+        code: "RAD",
+        display: "Radiology"
+      }]
+    }],
+    code: {
+      coding: [{
+        system: "http://hl7.org/fhir/sid/icd-10",
+        code: report?.icd_codes?.[0] || "Z00.0",
+        display: primaryDiagnosis
+      }]
+    },
+    conclusion: primaryDiagnosis,
+    conclusionCode: [{
+      coding: [{
+        system: "http://hl7.org/fhir/sid/icd-10",
+        code: report?.icd_codes?.[0] || "Z00.0"
+      }]
+    }]
   };
 
   return (
@@ -87,23 +73,33 @@ export default function DiagnosisReport({
             Clinical Evaluation Record
           </h2>
         </div>
-        <div className="flex items-center gap-2 flex-wrap print:hidden">
+        
+        <div className="flex items-center gap-2 print:hidden">
           <button
-            onClick={handleExportFHIR}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-surface/50 text-accent hover:bg-accent/20 border border-border hover:border-accent/50 transition-all duration-300"
+            onClick={() => setShowFHIR(!showFHIR)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-surface/50 text-accent hover:bg-accent/20 border border-border hover:border-accent/50 transition-all duration-300"
           >
-            <ShieldCheck className="w-4 h-4" />
-            FHIR JSON
+            {showFHIR ? "Hide FHIR JSON" : "FHIR HL7 Export"}
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-surface/50 text-text-primary hover:bg-primary/20 border border-border hover:border-primary/50 transition-all duration-300"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-surface/50 text-text-primary hover:bg-primary/20 border border-border hover:border-primary/50 transition-all duration-300"
           >
             <Printer className="w-4 h-4" />
-            Print / Export PDF
+            Print
           </button>
         </div>
       </div>
+
+      {/* FHIR Drawer */}
+      {showFHIR && (
+        <div className="p-4 rounded-xl bg-black/40 border border-accent/30 space-y-2 font-mono text-xs animate-slideIn print:hidden">
+          <div className="text-accent font-black uppercase tracking-widest text-[9px]">HL7 FHIR DiagnosticReport Resource</div>
+          <pre className="text-text-secondary overflow-x-auto max-w-full whitespace-pre-wrap bg-black/20 p-3 rounded-lg border border-border/40">
+            {JSON.stringify(fhirPayload, null, 2)}
+          </pre>
+        </div>
+      )}
 
       {/* Assessment Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
