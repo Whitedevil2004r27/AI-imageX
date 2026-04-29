@@ -34,6 +34,49 @@ export default function DiagnosisReport({
     }
   };
 
+  const handleExportFHIR = () => {
+    const fhirPayload = {
+      resourceType: "DiagnosticReport",
+      id: `aix-${Math.random().toString(36).slice(2, 9)}`,
+      status: confidence >= 80 ? "final" : "partial",
+      category: [
+        {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074",
+              code: "RAD",
+              display: "Radiology"
+            }
+          ]
+        }
+      ],
+      code: {
+        coding: [
+          {
+            system: "http://hl7.org/fhir/sid/icd-10",
+            code: report.icd_codes?.[0] || "Z00.0",
+            display: primaryDiagnosis
+          }
+        ],
+        text: primaryDiagnosis
+      },
+      conclusion: report.report_text,
+      conclusionCode: report.icd_codes?.map(code => ({
+        coding: [{ system: "http://hl7.org/fhir/sid/icd-10", code }]
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(fhirPayload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `FHIR-DiagnosticReport-${fhirPayload.id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 rounded-2xl bg-surface border border-border space-y-6 print:bg-white print:text-black print:p-0">
       {/* Report Header */}
@@ -44,13 +87,22 @@ export default function DiagnosisReport({
             Clinical Evaluation Record
           </h2>
         </div>
-        <button
-          onClick={handlePrint}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-surface/50 text-text-primary hover:bg-primary/20 border border-border hover:border-primary/50 transition-all duration-300 print:hidden"
-        >
-          <Printer className="w-4 h-4" />
-          Print / Export PDF
-        </button>
+        <div className="flex items-center gap-2 flex-wrap print:hidden">
+          <button
+            onClick={handleExportFHIR}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-surface/50 text-accent hover:bg-accent/20 border border-border hover:border-accent/50 transition-all duration-300"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            FHIR JSON
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-surface/50 text-text-primary hover:bg-primary/20 border border-border hover:border-primary/50 transition-all duration-300"
+          >
+            <Printer className="w-4 h-4" />
+            Print / Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Assessment Header */}
