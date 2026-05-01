@@ -11,12 +11,10 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["sharp"],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
+  allowedDevOrigins: ["*.vusercontent.net"],
 };
 
 export default nextConfig;
